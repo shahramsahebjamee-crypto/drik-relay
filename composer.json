@@ -1,0 +1,7 @@
+{
+    "name": "shahram/drik-relay",
+    "description": "A simple PHP relay to send messages to Telegram API",
+    "require": {
+        "php": ">=7.4"
+    }
+}
