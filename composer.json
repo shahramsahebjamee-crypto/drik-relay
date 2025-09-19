@@ -1,7 +1,14 @@
-{
-    "name": "shahram/drik-relay",
-    "description": "A simple PHP relay to send messages to Telegram API",
-    "require": {
-        "php": ">=7.4"
-    }
-}
+   {
+     "name": "shahram/drik-relay",
+     "description": "A simple PHP relay service for Telegram bot messages",
+     "require": {
+       "php": ">=7.4",
+       "ext-curl": "*",
+       "ext-json": "*"
+     },
+     "autoload": {
+       "psr-4": {
+         "App\\": "src/"
+       }
+     }
+   }
