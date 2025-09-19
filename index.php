@@ -1,42 +1,63 @@
 <?php
-// index.php - Webhook Relay for Telegram Bot
+// Error reporting فعال برای توسعه
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/relay_error.log');
 
-header('Content-Type: application/json');
-
-$input = json_decode(file_get_contents('php://input'), true);
-
+// دریافت ورودی JSON از تلگرام
+$input = file_get_contents('php://input');
 if (!$input) {
-    echo json_encode(["status" => "error", "message" => "No input received"]);
+    http_response_code(400);
+    echo json_encode(["error" => "No input received"]);
     exit;
 }
 
-$token   = $input['token'] ?? '';
-$chat_id = $input['chat_id'] ?? '';
-$text    = $input['text'] ?? '';
+$update = json_decode($input, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(400);
+    echo json_encode(["error" => "Invalid JSON"]);
+    exit;
+}
+
+// بررسی پارامترهای موردنظر
+$token   = $update['token']   ?? null;
+$chat_id = $update['chat_id'] ?? null;
+$text    = $update['text']    ?? null;
 
 if (!$token || !$chat_id || !$text) {
-    echo json_encode(["status" => "error", "message" => "Missing parameters"]);
+    http_response_code(400);
+    echo json_encode(["error" => "Missing parameters"]);
     exit;
 }
 
-$url = "https://api.telegram.org/bot{$token}/sendMessage";
+// ساخت آدرس API تلگرام
+$send_url = "https://api.telegram.org/bot{$token}/sendMessage";
 
-$data = [
+// داده‌هایی که باید ارسال شوند
+$post_data = [
     'chat_id' => $chat_id,
     'text'    => $text
 ];
 
-$ch = curl_init($url);
+// ارسال درخواست به تلگرام
+$ch = curl_init($send_url);
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
 $response = curl_exec($ch);
 
 if ($response === false) {
-    echo json_encode(["status" => "error", "message" => curl_error($ch)]);
-} else {
-    echo json_encode(["status" => "success", "telegram_response" => json_decode($response, true)]);
+    error_log("Curl error: " . curl_error($ch));
+    http_response_code(500);
+    echo json_encode(["error" => "Curl failed"]);
+    curl_close($ch);
+    exit;
 }
 
 curl_close($ch);
+
+// پاسخ نهایی تلگرام برگردانده می‌شود
+http_response_code(200);
+header('Content-Type: application/json');
+echo $response;
